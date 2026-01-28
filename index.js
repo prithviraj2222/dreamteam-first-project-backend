@@ -257,7 +257,7 @@ WHERE users.removed = 'N' AND users.role = 'user'
 
     data.forEach((user, i) => {
       sheet.addRow({
-        series: i+1,
+        series: i + 1,
         user_name: user.user_name,
         email: user.email,
         mobile: user.mobile,
@@ -279,6 +279,29 @@ WHERE users.removed = 'N' AND users.role = 'user'
 
     await workbook.xlsx.write(res);
     res.end();
+  });
+});
+
+app.get("/users-by-country", authMiddleware, adminOnly, (req, res) => {
+  const q = `
+    SELECT 
+      countries.name AS country,
+      COUNT(users.id) AS userCount
+    FROM users
+    INNER JOIN cities ON users.city_master_id = cities.id
+    INNER JOIN states ON cities.state_id = states.id
+    INNER JOIN countries ON states.country_id = countries.id
+    WHERE users.removed = 'N' AND users.role = 'user'
+    GROUP BY countries.id, countries.name
+    ORDER BY userCount DESC
+  `;
+
+  db.query(q, (err, data) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    res.json(data);
   });
 });
 
