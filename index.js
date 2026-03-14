@@ -305,6 +305,75 @@ app.get("/users-by-country", authMiddleware, adminOnly, (req, res) => {
   });
 });
 
+app.get("/events", authMiddleware, (req, res) => {
+  const q = `SELECT *FROM events WHERE removed = 'N'`;
+
+  db.query(q, (err, data) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    res.json(data);
+  });
+});
+
+app.post("/add-event", authMiddleware, adminOnly, (req, res) => {
+  const { name, startDate, endDate, isHoliday } = req.body;
+
+  const q = `INSERT INTO events (name, start_date, end_date, is_holiday) values (?,?,?,?)`;
+
+  db.query(q, [name, startDate, endDate, isHoliday], (err, data) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    res.json({ message: "Event Added" });
+  });
+});
+
+app.get("/event/search", authMiddleware, adminOnly, (req, res) => {
+  const { name } = req.query;
+  const q = `SELECT 
+    events.id,
+    events.name AS event_name,
+    events.start_date,
+    events.end_date,
+    events.is_holiday
+    FROM events
+    where events.removed = 'N' AND events.name LIKE ?`;
+
+  db.query(q, [`%${name}%`], (err, data) => {
+    if (err) return res.status(500).json(err);
+    res.json(data);
+  });
+});
+
+app.delete("/event/:id", authMiddleware, adminOnly, (req, res) => {
+  const { id } = req.params;
+  const q = `UPDATE events SET removed = 'Y' WHERE id = ?`;
+
+  db.query(q, [id], (err, data) => {
+    if (err) {
+      console.log(err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    return res.status(201).json({ message: "Update" });
+  });
+});
+
+app.patch("/events", (req, res) => {
+  const { selectedEvents } = req.body;
+  const q = `UPDATE events SET removed = 'Y' WHERE id IN (?)`;
+
+  db.query(q, [selectedEvents], (err) => {
+    if (err) {
+      console.log(err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    return res.status(201).json({ message: "Update" });
+  });
+});
+
 app.get("/user/search", (req, res) => {
   const { name } = req.query;
   const q = `SELECT 
@@ -319,6 +388,20 @@ app.get("/user/search", (req, res) => {
   db.query(q, [`%${name}%`], (err, data) => {
     if (err) return res.status(500).json(err);
     res.json(data);
+  });
+});
+
+app.put("/event/:id", (req, res) => {
+  const { id } = req.params;
+  const { val } = req.body;
+  const q = `UPDATE events SET is_holiday = ? WHERE id = ?`;
+
+  db.query(q, [val, id], (err, data) => {
+    if (err) {
+      console.log(err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    return res.status(201).json({ message: "Update" });
   });
 });
 
