@@ -1,6 +1,8 @@
+require("dotenv").config();
+
 const express = require("express");
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 const db = require("./db");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
@@ -9,9 +11,11 @@ const jwt = require("jsonwebtoken");
 const ExcelJS = require("exceljs");
 const { authMiddleware, adminOnly } = require("./middleware/auth");
 
-const SECRET = "MY_SUPER_SECRET_KEY";
+const SECRET = process.env.JWT_SECRET;
 
-app.use(cors());
+app.use(cors({
+  origin: "*"
+}));
 
 // app.use(express.json());
 // app.use(express.urlencoded({ extended: true }));
@@ -28,8 +32,8 @@ const generateOtp = () => {
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "solankiprithviraj253@gmail.com",
-    pass: "czss rlxw fkbz hkzv",
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 });
 
@@ -43,7 +47,7 @@ app.post("/send-otp", (req, res) => {
   };
 
   const mailOptions = {
-    from: "solankiprithviraj253@gmail.com",
+    from: process.env.EMAIL_USER,
     to: email,
     subject: "Your OTP Code",
     text: `Your OTP is ${otp}`,
